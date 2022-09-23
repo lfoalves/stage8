@@ -78,3 +78,22 @@ Camada de CONTROLLERS
 
 São funções que tem acesso ao objeto de solicitação (requisição), o objeto da resposta, e a próxima função do middleware no ciclo solicitação-resposta do aplicativo.
 A próxima função middleware é comumente denotada por uma variável chamada next.
+
+# Aula 19
+- Utilizando 
+
+# Aula 20
+- Tratamento de erro do cliente
+Criando uma instância de erro.
+
+# Aula 21
+Tratamento de exceções
+- Instalando lib Express Async Errors
+
+`npm install express-async-errors --save`
+
+como dependencia de produção.
+
+# Aula 22
+Configurando o Insomnia: ENVIRONMENTS
+- Request Collection Environment: BASE_URL, Folder Environment: RESOURCE.
