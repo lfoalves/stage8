@@ -107,3 +107,30 @@ Criando o database e as tabelas.
 
 # Aula 11
 - Select. Método Create do Controller.
+
+# Aula 12
+Cadastrando um usuário:
+
+`await database.run("INSERT INTO tablename (columname1, columname2, columname3) VALUES (?, ?, ?)", [data1, data2, data3])`
+
+# Aula 13
+- Criptografia de password.
+
+`npm install bcryptjs --save`
+
+Usando a função hash, passando a senha como primeiro parâmetro e o passo numérico 8 como segundo parâmetro. Guardando o retorno da função em uma variável e passando está variável para o database.
+
+# Aula 14
+- Update User
+Criando rota com o método PUT para atualizar informações do usuário.
+
+# Aula 15
+- Update Password
+Pedindo a senha antiga e a atual, comparando com a senha criptografada no banco de dados e se deu match, então repassar a nova senha criptografa para o database.
+
+# Aula 16
+- Datetime do banco
+Ao invés do JS informar ao banco o formato de datetime, deixamos como responsabilidade do próprio banco atualizar o datetime.
+
+# Aula 17
+- Nullish coalescing operator `??` é diferente do operador `||`
