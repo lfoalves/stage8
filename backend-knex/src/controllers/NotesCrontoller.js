@@ -55,11 +55,34 @@ class NotesController {
   async delete(request, reponse) {
     const id = request.params.note_id;
 
-    await knex('notes').where({ id: id }).delete();
+    const resultDelete = await knex('notes').where({ id: id }).delete();
 
     return reponse.json({
-      message: 'Note Deleted'
+      message: `Note Deleted ${resultDelete}` 
     });
+  }
+
+  async index(request, reponse) {
+    const { user_id, title, tags } = request.query;
+
+    let notes;
+
+    if (tags) {
+      const filterTags = tags.split(',').map(tag => tag.trim());
+      console.log(filterTags)
+      notes = await knex('tags')
+      .whereIn('name', filterTags)
+    } else {
+      notes = await knex('notes')
+      .where({ user_id })
+      .whereLike('title', `%${title}%`)
+      .orderBy('title');
+    }
+
+
+    console.log("Notes", typeof(notes), notes, "User id", typeof(user_id), user_id)
+
+    return reponse.json(notes);
   }
 }
 

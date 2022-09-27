@@ -57,4 +57,20 @@ Por padrão a funcionalidade de CASCADE é desabilitada no SQLite.
 Cadastrando notas.
 
 # Aula 11
-Exibindo nota
+- Exibindo nota
+
+# Aula 12
+- Deletando nota
+
+# Aula 13
+- Listando notas
+- Usando Query Params
+Nessa aula criaremos a rota para listar as notas cadastradas em nosso banco de dados incluindo as tags e links.
+
+# Aula 14
+- Operador Like
+Usamos a query do request para fazer buscas por palavras chaves usando a sintaxe SQL de % antes e depois da palavra.
+
+`http://localhost:3333/notes?user_id=1&title=banco
+
+
