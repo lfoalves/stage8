@@ -6,7 +6,6 @@ const sqliteConnection = require('../database/sqlite/')
 class UsersController {
   async create(request, response) {
     const { name, email, password } = request.body;
-    console.log(name, email, password)
 
     if (!name || !email || !password) {
       throw new AppError('Informações são necessárias.')
@@ -17,8 +16,6 @@ class UsersController {
     const database = await sqliteConnection();
     const checkUserExists = await database.get('SELECT * FROM users WHERE email = (?)', [email])
     
-    console.log(checkUserExists)
-
     if (checkUserExists) {
       throw new AppError('Este e-mail já está em uso.')
     }
@@ -39,16 +36,9 @@ class UsersController {
     const {name, email, password, old_password} = request.body;
     const { id } = request.params;
 
-    // Só se fosso obrigatório atualizar tudo
-    // if (!name || !email || !password || !old_password) {
-    //   throw new AppError('Informações são necessárias.')
-    // }
-
     const database = await sqliteConnection();
 
     const user = await database.get("SELECT * FROM users WHERE id = (?)", [id])
-
-    console.log("Usuário", user, "ID", id)
 
     if (!user) {
       throw new AppError('Usuário não encontrado.')

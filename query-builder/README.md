@@ -96,3 +96,14 @@ Nessa aula aprenderemos a utilizar a função map e filter utilizando a ferramen
 
 PlayCode - Javascript Playground: https://playcode.io/
 
+# Aula 19
+- Obtend tag de notas.
+
+# Aula 20
+- Controller de Tags
+
+# Aula 21
+Testando tudo.
+Apagando o database e startando a plicação.
+API e Backend em Node.
+
