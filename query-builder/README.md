@@ -73,4 +73,26 @@ Usamos a query do request para fazer buscas por palavras chaves usando a sintaxe
 
 `http://localhost:3333/notes?user_id=1&title=banco
 
+# Aula 15
+- Filtro WhereIn
+
+Nessa aula utilizaremos o filtro WhereIn para filtrar realmente o que é necessário em nossa busca no banco de dados.
+
+
+# Aula 16
+- Conceito de Inner Join
+
+Nessa aula aprenderemos sobre Inner Join para fazer a junção de duas tabelas e trazer um resultado em conjunto desses dados.
+
+# Aula 17
+- Aplicando Inner Join
+
+Nessa aula aplicaremos o Inner Join dentro do nosso projeto unificando os dados das tabelas notes e tags em uma consulta.
+
+# Aula 18
+- Map e Filter métodos para Array.
+
+Nessa aula aprenderemos a utilizar a função map e filter utilizando a ferramenta PlayCode.
+
+PlayCode - Javascript Playground: https://playcode.io/
 

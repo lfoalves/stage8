@@ -1,12 +1,11 @@
 const knex = require("../database/knex");
 const AppError = require("../utils/AppError");
 
+let count = 0;
 class NotesController {
   async create(request, reponse) {
     const {title, description, tags, links} = request.body;
     const { user_id } = request.params;
-
-    console.log(title, description, tags, links, user_id)
 
     if (!title || !description || !tags || !links || !user_id) {
       throw new AppError('Informações são necessárias')
@@ -63,24 +62,37 @@ class NotesController {
   }
 
   async index(request, reponse) {
+
     const { user_id, title, tags } = request.query;
+
+    if (!user_id) {
+      return reponse.send(JSON.stringify({
+        message: 'Id do usuário é necessário'
+      }))
+    }
 
     let notes;
 
     if (tags) {
       const filterTags = tags.split(',').map(tag => tag.trim());
-      console.log(filterTags)
+
       notes = await knex('tags')
+      .select([
+        'notes.id',
+        'notes.title',
+        'notes.user_id'
+      ])
+      .where('notes.user_id', '=', user_id)
+      .whereLike('notes.title', `%${title}%`)
       .whereIn('name', filterTags)
+      .innerJoin('notes', 'notes.id', 'tags.note_id')
+      .orderBy('notes.title')
     } else {
       notes = await knex('notes')
       .where({ user_id })
       .whereLike('title', `%${title}%`)
       .orderBy('title');
     }
-
-
-    console.log("Notes", typeof(notes), notes, "User id", typeof(user_id), user_id)
 
     return reponse.json(notes);
   }
