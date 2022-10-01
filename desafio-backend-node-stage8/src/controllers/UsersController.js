@@ -1,17 +1,20 @@
 const {sqliteConnection} = require('../database/sqlite')
 const { randomUUID } = require('crypto');
+const { createHmac } = require('crypto');
 
 class UsersController {
   async create(request, reponse) {
     const database = await sqliteConnection();
     let id = randomUUID();
     let isUserId = true;
+    let pwdEncrypt;
 
     const { name, email, password } = request.body;
-
+    
     if (!name || !email || !password) {
       throw new Error('Dados do usuário são necessário para criação')
     }
+
 
     let usersExists = await database.all('SELECT * FROM users');
     console.log('USERS EXISTS', usersExists)
@@ -29,31 +32,32 @@ class UsersController {
       throw new Error('Email já em uso');
     }
     
+    pwdEncrypt = createHmac('sha256', password).digest('hex');
+    console.log(pwdEncrypt)
+
     if (!isUserId && !isUserEmail) {
       const result = await database.run(`
         INSERT INTO users (
           id, name, email, password
           ) VALUES (
             ?, ?, ?, ?
-          )`, [id, name, email, password]
+          )`, [id, name, email, pwdEncrypt]
         );
 
-      database.close();        
+      database.close();       
   
       return reponse.json({
         message: "Usuário criado com sucesso",
         data: result
       })
     }
-
-
   }
 
   async show(request, reponse) {
     const database = await sqliteConnection();
 
     const users = await database.all(`
-      SELECT id, name, email, created_at
+      SELECT id, name, email, password, created_at
       FROM users ORDER BY created_at`
     );
 
@@ -101,6 +105,18 @@ class UsersController {
     
   }
 
+  async updatePassword(request, response) {
+    const database = sqliteConnection();
+
+    const { oldpassword, newpassword } = request.body;
+
+    const usersPasswords = await (await database).run('SELECT password FROM users');
+
+    const isPasswordUserId = usersPasswords.som
+
+    const pwdDecrypted 
+  }
+
   async delete(request, reponse) {
     const database = await sqliteConnection();
     let isUserId;
@@ -118,6 +134,7 @@ class UsersController {
     isUserId = usersExists.some(userExists => userExists.id === user_id);
 
     if (isUserId) {
+      await database.run('PRAGMA foreign_keys = ON');
       const result = await database.run('DELETE FROM users WHERE id = ?', [user_id])
       return reponse.json({
         message: 'Usuário excluído com sucesso',
