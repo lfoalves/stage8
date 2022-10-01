@@ -113,8 +113,6 @@ class UsersController {
     const usersPasswords = await (await database).run('SELECT password FROM users');
 
     const isPasswordUserId = usersPasswords.som
-
-    const pwdDecrypted 
   }
 
   async delete(request, reponse) {

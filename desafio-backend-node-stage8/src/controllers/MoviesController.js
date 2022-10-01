@@ -5,7 +5,7 @@ class MoviesController {
   async create(request, response) {
     const database = await sqliteConnection();
 
-    let id;
+    let movieId;
     let isMovieId = true;
 
     const { user_id } = request.params;
@@ -16,10 +16,11 @@ class MoviesController {
     }
 
     const movies = await database.all('SELECT * FROM movie_notes');
+    // const movies = await database.all('SELECT id FROM movie_notes WHERE id LIKE ?', [id]);
 
     while (isMovieId) {
-      id = randomUUID();
-      isMovieId = movies.some(movie => movie.id === id);
+      movieId = randomUUID();
+      isMovieId = movies.some(movie => movie.id === movieId);
     }
 
     if (!isMovieId) {
@@ -27,26 +28,19 @@ class MoviesController {
         INSERT INTO movie_notes (
           id, title, description, user_id
         ) VALUES ( ?, ?, ?, ?)`,
-        [id, title, description, user_id]
+        [movieId, title, description, user_id]
       );
 
-      let movieNotesId = randomUUID();
+      console.log("TAGS INSERT", tags)
 
-      const tagsInsert = tags.map(name => {
-        return {
-          movieNotesId,
-          id,
-          user_id,
-          name
-        }
-      })
-
-      await database.run(`
+      tags.forEach(async tag => {
+        await database.run(`
         INSERT INTO movie_tags (
-          id, note_id, user_id, name
-          ) VALUES (? , ?, ?, ?)`,
-          [movieNotesId, id, user_id, tagsInsert]
-      );
+          note_id, user_id, name
+          ) VALUES (?, ?, ?)`,
+          [movieId, user_id, tag]
+        );
+      })
   
       return response.json({
         message: 'Created Movie Note',
@@ -61,6 +55,38 @@ class MoviesController {
     const movies = await database.all('SELECT id, title, description FROM movie_notes');
 
     return reponse.json(movies)
+  }
+
+  async delete(request, reponse) {
+    console.log('METHOD DELETE MOVIES')
+    const database = await sqliteConnection();
+    const { movie_id } = request.params;
+    let isMovieId = true;
+
+    if (!movie_id) {
+      throw new Error('Identificação do filmes é necessaŕia')
+    }
+
+    
+    const moviesExists = await database.all('SELECT * FROM movie_notes');
+    console.log("DELETE MOVIE", moviesExists);
+
+    if (!moviesExists) {
+      throw new Error('Identificação do filme é necessária para a deleção')
+    };
+
+    while (isMovieId) {
+      isMovieId = moviesExists.some(movie => movie.id === movie_id);
+    }
+    
+    // const movies = await database.all('SELECT id FROM movie_notes WHERE id LIKE ?', [id]);
+
+    await database.run('PRAGMA foreign_keys = ON');
+    const movieDeleted = await database.run('DELETE FROM movie_notes WHERE id = ?', [movie_id]);
+    
+    return reponse.json({
+      message: movieDeleted
+    })
   }
 
 }
