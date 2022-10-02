@@ -1,20 +1,18 @@
 const {sqliteConnection} = require('../database/sqlite')
 const { randomUUID } = require('crypto');
-const { createHmac } = require('crypto');
-
+const { hash, compare } = require('bcryptjs');
 class UsersController {
   async create(request, reponse) {
     const database = await sqliteConnection();
     let id = randomUUID();
     let isUserId = true;
-    let pwdEncrypt;
+    let hashedPassword;
 
     const { name, email, password } = request.body;
     
     if (!name || !email || !password) {
       throw new Error('Dados do usuário são necessário para criação')
     }
-
 
     let usersExists = await database.all('SELECT * FROM users');
     console.log('USERS EXISTS', usersExists)
@@ -31,17 +29,16 @@ class UsersController {
     if (isUserEmail) {
       throw new Error('Email já em uso');
     }
-    
-    pwdEncrypt = createHmac('sha256', password).digest('hex');
-    console.log(pwdEncrypt)
 
+    hashedPassword = await hash(password, 8)
+    
     if (!isUserId && !isUserEmail) {
       const result = await database.run(`
         INSERT INTO users (
           id, name, email, password
           ) VALUES (
             ?, ?, ?, ?
-          )`, [id, name, email, pwdEncrypt]
+          )`, [id, name, email, hashedPassword]
         );
 
       database.close();       
@@ -106,13 +103,43 @@ class UsersController {
   }
 
   async updatePassword(request, response) {
-    const database = sqliteConnection();
+    const database = await sqliteConnection();
 
     const { oldpassword, newpassword } = request.body;
+    const { user_id } = request.params;
+    let isMatchPass = false;
 
-    const usersPasswords = await (await database).run('SELECT password FROM users');
+    console.log("OLD E NEW PASSWORD", oldpassword, newpassword)
 
-    const isPasswordUserId = usersPasswords.som
+    const user = await database.all('SELECT * FROM users WHERE id = ?', [user_id]);
+    
+    if (!user) {
+      throw new Error('Identificação do usuario é requerida')
+    }
+
+    if (user.length > 0) {
+      user.map(async user => {
+        isMatchPass = await compare(oldpassword, user.password);
+        console.log('Dentro do map User')
+        console.log(isMatchPass)
+        if (isMatchPass) {
+          let newPasswordCrypted = await hash(newpassword, 8)
+          database.run('UPDATE users SET password = ? WHERE id = ?', [newPasswordCrypted, user.id])
+
+          return response.json({
+            message: 'Senha do usuário alterada com sucesso!'
+          })
+        } else {
+          return response.json({
+            message: 'Senhas não conferem.'
+          })
+        }
+      })
+    } else {
+      return response.json({
+        message: 'Usuário não identificado'
+      })
+    }
   }
 
   async delete(request, reponse) {
