@@ -149,8 +149,6 @@ class UsersController {
     const { user_id } = request.params;
     let isMatchPass = false;
 
-    // console.log("OLD E NEW PASSWORD", oldpassword, newpassword)
-
     const user = await database.all('SELECT * FROM users WHERE id = ?', [user_id]);
     
     if (!user) {

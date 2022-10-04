@@ -1,7 +1,7 @@
 const { randomUUID } = require('crypto');
 const { sqliteConnection } = require('../database/sqlite');
 
-class MoviesController {
+class MoviesNotesController {
   async create(request, response) {
     const database = await sqliteConnection();
 
@@ -71,6 +71,17 @@ class MoviesController {
     }
   }
 
+  async index(request, response) {
+    const database = await sqliteConnection();
+
+    const { user_id } = request.params;
+
+    const userMoviesNotes = await database.all('SELECT * FROM movie_notes WHERE user_id = ?', [user_id]);
+    console.log(userMoviesNotes);
+
+    return response.json(userMoviesNotes);
+  }
+
   async update(request, reponse) {
     const database = await sqliteConnection();
     const { movie_id } = request.params;
@@ -114,7 +125,6 @@ class MoviesController {
 
     
   }
-
 }
 
-module.exports = { MoviesController }
+module.exports = { MoviesNotesController }
