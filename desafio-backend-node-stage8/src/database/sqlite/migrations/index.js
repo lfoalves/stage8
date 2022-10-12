@@ -6,9 +6,9 @@ const { createMovieTags } = require('./createMovieTags');
 
 async function migrationRun() {
   const database = await sqliteConnection();
-  database.exec(createUsers);
-  database.exec(createMovieNotes);
-  database.exec(createMovieTags);
+  await database.exec(createUsers);
+  await database.exec(createMovieNotes);
+  await database.exec(createMovieTags);
 }
 
 module.exports = { migrationRun }

@@ -3,7 +3,7 @@ const createMovieNotes = `
     id VARCHAR PRIMARY KEY NOT NULL,
     title VARCHAR,
     description VARCHAR,
-    rating INTEGER,
+    rating INTEGER DEFAULT NULL,
     user_id VARCHAR REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

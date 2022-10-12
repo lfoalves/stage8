@@ -1,4 +1,5 @@
 const { sqliteConnection } = require("../database/sqlite");
+const { AppError } = require('../utils/AppError');
 
 class MoviesTagsController {
   async show(request, response) {
@@ -6,6 +7,9 @@ class MoviesTagsController {
 
     const movieTags = await database.all('SELECT * FROM movie_tags');
     console.log(movieTags)
+    await database.close();
+
+    if (movieTags.length <= 0) throw new AppError('Não existem notas criadas');
 
     return response.json(movieTags)
   }
@@ -17,6 +21,8 @@ class MoviesTagsController {
     
     const userMovieTags = await database.all('SELECT * FROM movie_tags WHERE user_id = ?', [user_id]);
     console.log(userMovieTags)
+
+    if (userMovieTags.length <= 0) throw new AppError('Não existem tags de notas cadastradas por esse usuários ainda')
 
     return response.json(userMovieTags)
   }

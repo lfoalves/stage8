@@ -1,4 +1,5 @@
-const {sqliteConnection} = require('../database/sqlite')
+const { sqliteConnection } = require('../database/sqlite');
+const { AppError } = require('../utils/AppError');
 const { randomUUID } = require('crypto');
 const { hash, compare } = require('bcryptjs');
 class UsersController {
@@ -11,28 +12,28 @@ class UsersController {
     const { name, email, password } = request.body;
     
     if (!name || !email || !password) {
-      throw new Error('Dados do usuário são necessário para criação')
+      throw new AppError('Informações do usuário são necessárias para criação')
     }
 
     let usersExists = await database.all('SELECT * FROM users');
-    console.log('USERS EXISTS', usersExists)
+    // console.log('USERS EXISTS', usersExists)
 
     while (isUserId) {
       id = randomUUID();
       isUserId = usersExists.some(userExists => userExists.id === id);
     }
 
-    let isUserEmail = usersExists.some(userEmailExists => userEmailExists.email === email);
+    let isUserEmailExists = usersExists.some(userEmailExists => userEmailExists.email === email);
     
-    console.log(isUserId, isUserEmail)
+    // console.log(isUserId, isUserEmailExists)
 
-    if (isUserEmail) {
-      throw new Error('Email já em uso');
+    if (isUserEmailExists) {
+      throw new AppError('Email já em uso');
     }
 
     hashedPassword = await hash(password, 8)
     
-    if (!isUserId && !isUserEmail) {
+    if (!isUserId && !isUserEmailExists) {
       const result = await database.run(`
         INSERT INTO users (
           id, name, email, password
@@ -41,11 +42,15 @@ class UsersController {
           )`, [id, name, email, hashedPassword]
         );
 
-      database.close();       
+      await database.close();
   
-      return reponse.json({
+      return reponse.status(201).json({
         message: "Usuário criado com sucesso",
-        data: result
+        data: result,
+        infos: {
+          name: name,
+          email: email
+        }
       })
     }
   }
@@ -58,10 +63,11 @@ class UsersController {
       FROM users ORDER BY created_at`
     );
 
-    console.log(users)
+    // console.log(users)
+    await database.close();
 
     return reponse.json({
-      message: 'SHOW USER CONTROLLER',
+      message: 'SHOW USERS',
       data: users
     })
   }
@@ -73,15 +79,13 @@ class UsersController {
     const { name, newEmail, oldPassword, newPassword } = request.body;
 
     if (!user_id || !oldPassword) {
-      return reponse.json({
-        message: 'Identificação do usuário ou senha antiga é/são requerida(s) para a atualização'
-      })
+      throw new AppError('Identificação do usuário ou senha antiga é/são requerida(s) para a atualização')
     }
 
     const userIdExists = await database.all('SELECT * FROM users WHERE id = ?', [user_id]);
     const usersEmailExists = await database.all('SELECT email FROM users');
-    console.log('USER Id EXISTS', userIdExists)
-    console.log('USER EMAIL EXISTS', usersEmailExists)
+    // console.log('USER Id EXISTS', userIdExists)
+    // console.log('USER EMAIL EXISTS', usersEmailExists)
 
     if (userIdExists.length > 0) {
       if (userIdExists[0].id === user_id) {
@@ -91,23 +95,20 @@ class UsersController {
 
         // verifica se a senha atual confere com a senha atual recebida do usuário
         if (!passwordMatchOldAndNew) {
-          return reponse.json({
-            message: "Senha atual não confere!"
-          })
+          throw new AppError("Senha atual não confere")
         }
 
         // verifica se o email já está em uso
         if (isEmailMatchExistsInDatabase) {
-          return reponse.json({
-            message: 'Email já em uso'
-          })
+          throw new AppError('Email já em uso')
         }
 
+        // Variáveis para tratamento de informações em falta
         let nameData = name ? name : userIdExists[0].name;
         let emailData = newEmail ? newEmail : userIdExists[0].email;
         let passwordData = newPassword ? await hash(newPassword, 8) : userIdExists[0].password;
         
-        console.log("Tratamento dos dados:", '\n', nameData, '\n', emailData, '\n', passwordData)
+        // console.log("Tratamento dos dados:", '\n', nameData, '\n', emailData, '\n', passwordData)
 
         await database.run(`
           UPDATE users SET 
@@ -118,27 +119,22 @@ class UsersController {
           WHERE id = ?`,
           [nameData, emailData, passwordData, user_id]
         );
-        return reponse.json(
-          {
-            message: 'Informações do usuário atualizadas.',
-            infos: [
-              {name: nameData}, 
-              {email: emailData}, 
-              {password: passwordData}, 
-              {userId: user_id}
-            ]
-          }
-        );
+
+        await database.close();
+
+        return reponse.json({
+          message: 'Informações do usuário atualizadas',
+            infos: {
+              name: nameData, 
+              email: emailData
+            }
+        });
 
       } else {
-        return reponse.json({
-          message: 'Id não deu match!'
-        });
+        throw new AppError('Id não deu match')
       }
     } else {
-      return reponse.json({
-        message: 'Usuário não identificado!'
-      });
+      throw new AppError('Usuário não identificado')
     }    
   }
 
@@ -149,12 +145,13 @@ class UsersController {
     const { user_id } = request.params;
     let isMatchPass = false;
 
-    const user = await database.all('SELECT * FROM users WHERE id = ?', [user_id]);
-    
-    if (!user) {
-      throw new Error('Identificação do usuario é requerida')
+    if (!user_id || !oldpassword || !newpassword) {
+      throw new AppError('Informações são necessárias');
     }
 
+    const user = await database.all('SELECT * FROM users WHERE id = ?', [user_id]);
+    // console.log(user)
+    
     if (user.length > 0) {
       user.map(async user => {
         isMatchPass = await compare(oldpassword, user.password);
@@ -162,21 +159,24 @@ class UsersController {
         // console.log(isMatchPass)
         if (isMatchPass) {
           let newPasswordCrypted = await hash(newpassword, 8)
-          database.run('UPDATE users SET password = ? WHERE id = ?', [newPasswordCrypted, user.id])
+          await database.run(`
+            UPDATE users
+            SET password = ?,
+            updated_at = DATETIME('NOW')
+            WHERE id = ?`,
+            [newPasswordCrypted, user.id]
+          );
+          await database.close();
 
           return response.json({
             message: 'Senha do usuário alterada com sucesso!'
           })
         } else {
-          return response.json({
-            message: 'Senhas não conferem.'
-          })
+          throw new AppError('Senhas não conferem')
         }
       })
     } else {
-      return response.json({
-        message: 'Usuário não identificado'
-      })
+      throw new AppError('Usuário não identificado')
     }
   }
 
@@ -186,27 +186,27 @@ class UsersController {
     const { user_id } = request.params;
 
     if (!user_id) {
-      throw new Error('Identificação do usuário requerida')
+      throw new AppError('Identificação do usuário requerida')
     }
 
-    console.log('USER ID', user_id)
+    // console.log('USER ID', user_id)
 
     let usersExists = await database.all('SELECT * FROM users');
-    console.log('USERS EXISTS IN DELETE', usersExists)
+    // console.log('USERS EXISTS IN DELETE', usersExists)
 
     isUserId = usersExists.some(userExists => userExists.id === user_id);
 
     if (isUserId) {
       await database.run('PRAGMA foreign_keys = ON');
-      const result = await database.run('DELETE FROM users WHERE id = ?', [user_id])
+      const result = await database.run('DELETE FROM users WHERE id = ?', [user_id]);
+      await database.close();
+      
       return reponse.json({
         message: 'Usuário excluído com sucesso',
         data: result
       })
     } else {
-      return reponse.json({
-        message: 'USER ID NOT EXISTS'
-      })
+      throw new AppError('User ID not exists')
     }
 
   }
