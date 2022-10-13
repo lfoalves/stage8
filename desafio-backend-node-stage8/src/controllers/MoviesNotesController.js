@@ -13,11 +13,11 @@ class MoviesNotesController {
     const { user_id } = request.params;
     const { title, description, rating, tags } = request.body;
 
-    const userExists = await database.all('SELECT * FROM users WHERE id = ?', [user_id]);
-
     if (!title || !description || !user_id) {
       throw new Error('Informações são necessárias para cadastrar o filme')
     }
+
+    const userExists = await database.all('SELECT * FROM users WHERE id = ?', [user_id]);
 
     if (userExists.length <= 0) {
       throw new AppError('Usuário não identificado para a criação da nota para o filme')
@@ -30,7 +30,7 @@ class MoviesNotesController {
       isMovieId = movies.some(movie => movie.id === movieId);
     }
 
-    ratingData = rating ? rating : null; 
+    ratingData = rating ? rating : null;
 
     if (!isMovieId) {
       const insertMovie = await database.run(`
