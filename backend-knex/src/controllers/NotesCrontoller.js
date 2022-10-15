@@ -36,7 +36,7 @@ class NotesController {
 
     await knex('tags').insert(tagsInsert);
 
-    reponse.json({
+    reponse.status(201).json({
       linksInsert, tagsInsert, title, description
     })
   }
@@ -66,9 +66,7 @@ class NotesController {
     const { user_id, title, tags } = request.query;
 
     if (!user_id) {
-      return reponse.send(JSON.stringify({
-        message: 'Id do usuário é necessário'
-      }))
+      throw new AppError('Id do usuário é necessário')
     }
 
     let notes;
