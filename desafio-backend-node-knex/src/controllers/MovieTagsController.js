@@ -11,4 +11,4 @@ class MovieTagsController {
   }
 }
 
-module.exports ={ MovieTagsController }
+module.exports = { MovieTagsController }

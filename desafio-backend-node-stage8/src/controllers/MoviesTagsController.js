@@ -6,7 +6,6 @@ class MoviesTagsController {
     const database = await sqliteConnection();
 
     const movieTags = await database.all('SELECT * FROM movie_tags');
-    console.log(movieTags)
     await database.close();
 
     if (movieTags.length <= 0) throw new AppError('Não existem notas criadas');

@@ -62,7 +62,6 @@ class NotesController {
   }
 
   async index(request, reponse) {
-
     const { user_id, title, tags } = request.query;
 
     if (!user_id) {

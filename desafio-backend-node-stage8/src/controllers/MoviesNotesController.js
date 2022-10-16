@@ -89,12 +89,27 @@ class MoviesNotesController {
 
     if (!userExist) throw new AppError('Usuário não identificado');
 
-    const userMoviesNotes = await database.all('SELECT * FROM movie_notes WHERE user_id = ? ORDER BY created_at', [user_id]);
+    const userMoviesNotes = await database.all(`
+      SELECT * FROM movie_notes
+      JOIN movie_tags
+      ON movie_notes.id = movie_tags.note_id
+      WHERE movie_notes.user_id = ?
+      ORDER BY movie_notes.created_at`,
+      [user_id]);
+
+      let notes;
+
+      notes = await database.all(`
+        SELECT movie_notes.id, movie_notes.title, movie_notes.user_id
+        FROM movie_tags JOIN movie_notes
+        ON movie_tags.note_id = movie_notes.id
+        WHERE movie_notes.user_id = ?`,[user_id])
+
     await database.close();
 
     if (userMoviesNotes.length <= 0) throw new AppError('Não existem notas sobre filmes criadas por esse usuário')
 
-    return response.json(userMoviesNotes);
+    return response.json(notes);
   }
 
   async search(request, reponse) {
