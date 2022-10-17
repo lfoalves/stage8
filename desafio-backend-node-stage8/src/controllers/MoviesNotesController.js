@@ -62,14 +62,17 @@ class MoviesNotesController {
     const database = await sqliteConnection();
 
     const { user_id } = request.params;
+    if (!user_id) throw new AppError('Identificação do usuário é requerida')
+
+    const userExists = await database.get('SELECT * FROM users WHERE id = ?', [user_id])
+    if (!userExists) throw new AppError('Usuário não identificado')
 
     const userMovies = await database.all(`
       SELECT * 
       FROM movie_notes
-      JOIN movie_tags
-      ON movie_notes.id = movie_tags.note_id
-      WHERE movie_tags.user_id = ?
+      WHERE user_id = ?
       `, [user_id]);
+
 
     await database.close();
 
@@ -78,36 +81,94 @@ class MoviesNotesController {
     return reponse.json({userMovies})
   }
 
+  async showAll(request, reponse) {
+    const database = await sqliteConnection();
+
+    const allNoteMovies = await database.all(`
+      SELECT * FROM movie_notes
+    `)
+
+    if (!allNoteMovies || allNoteMovies.length <= 0) throw new AppError('Não existem notas ainda cadastradas na base de dados')
+
+    return reponse.json({
+      message: 'All movies notes',
+      data: allNoteMovies
+    })
+  }
+
   async index(request, response) {
     const database = await sqliteConnection();
 
-    const { user_id } = request.params;
+    // http://localhost:3333/notes?user_id=1&title=jokes&tags=node,%20express
+    // http://localhost:9999/movies?user_id=a1d1f5e0-c0d3-4c5e-be47-0ee9d577b106&title=fuga&tags=aventura,%20anima%C3%A7%C3%A3o
+
+    const { user_id, title, tags } = request.query;
 
     if (!user_id) throw new AppError('Necessário a identificação do usuário');
+    if (!title) throw new AppError('Necessário palavra chave para a pesquisa');
 
     const userExist = await database.get('SELECT * FROM users WHERE id = ?', [user_id]);
 
     if (!userExist) throw new AppError('Usuário não identificado');
 
-    const userMoviesNotes = await database.all(`
-      SELECT * FROM movie_notes
-      JOIN movie_tags
-      ON movie_notes.id = movie_tags.note_id
-      WHERE movie_notes.user_id = ?
-      ORDER BY movie_notes.created_at`,
-      [user_id]);
+    // const userMoviesNotes = await database.all(`
+    //   SELECT * FROM movie_notes
+    //   JOIN movie_tags
+    //   ON movie_notes.id = movie_tags.note_id
+    //   WHERE movie_notes.user_id = ?
+    //   ORDER BY movie_notes.created_at`,
+    //   [user_id]);
 
       let notes;
 
-      notes = await database.all(`
-        SELECT movie_notes.id, movie_notes.title, movie_notes.user_id
-        FROM movie_tags JOIN movie_notes
-        ON movie_tags.note_id = movie_notes.id
-        WHERE movie_notes.user_id = ?`,[user_id])
+      if (tags) {
+        const filterTags = tags.split(',').map(tag => tag.trim())
+        console.log(filterTags)
+
+        // notes = await database.all(`
+        //   SELECT * FROM movie_notes JOIN movie_tags
+        //   ON movie_tags.note_id = movie_notes.id
+        //   WHERE movie_notes.user_id = ?`,[user_id])
+  
+        notes = await database.all(`
+          SELECT movie_notes.id, movie_notes.title, movie_notes.user_id
+          FROM movie_tags JOIN movie_notes
+          ON movie_tags.note_id = movie_notes.id
+          WHERE movie_notes.user_id = ?`,[user_id])
+          
+      } else {
+          notes = await database.all(`
+          SELECT * FROM movie_notes WHERE title LIKE '%${title}%' 
+          INTERSECT
+          SELECT * FROM movie_notes WHERE user_id = '${user_id}'
+        `)
+  
+        // --->>> SELECT com filtro
+        // notes = await database.all(`
+        //   SELECT * FROM movie_notes WHERE title LIKE '%${title}%' AND user_id = '${user_id}'
+        // `)
+  
+      }
+
+      const userTags = await database.all('SELECT * FROM movie_tags WHERE user_id = ?', [user_id]);
+
+      const notesWithTags = notes.map(note => {
+        const noteTags = userTags.filter(tag => tag.note_id === note.id)
+
+        return {
+          ...note,
+          tags: noteTags
+        }
+      })
+
+      console.log(notesWithTags)
+      
+      // console.log('NOTES', notes)
+      if (notes.length <= 0) throw new AppError('Não existem notas sobre filmes com estas letras')
 
     await database.close();
 
-    if (userMoviesNotes.length <= 0) throw new AppError('Não existem notas sobre filmes criadas por esse usuário')
+    // if (userMoviesNotes.length <= 0) throw new AppError('Não existem notas sobre filmes criadas por esse usuário')
 
     return response.json(notes);
   }

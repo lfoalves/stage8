@@ -10,7 +10,10 @@ class MoviesTagsController {
 
     if (movieTags.length <= 0) throw new AppError('Não existem notas criadas');
 
-    return response.json(movieTags)
+    return response.json({
+      message: 'All movie tags',
+      data: movieTags
+    })
   }
 
   async index(request, response) {
@@ -18,8 +21,12 @@ class MoviesTagsController {
 
     const { user_id } = request.params;
     
+    if (!user_id) throw new AppError('Identificação do usuário é requerida')
+
+    const userExists = await database.get('SELECT * FROM users WHERE id = ?', [user_id])
+    if (!userExists) throw new AppError('Usuário não identificado')
+    
     const userMovieTags = await database.all('SELECT * FROM movie_tags WHERE user_id = ?', [user_id]);
-    console.log(userMovieTags)
 
     if (userMovieTags.length <= 0) throw new AppError('Não existem tags de notas cadastradas por esse usuários ainda')
 

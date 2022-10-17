@@ -3,7 +3,7 @@ const { Router } = require('express');
 const { usersRoutes } = require('./users.routes');
 const { moviesNotesRoutes } = require('./movies-notes.routes');
 const { moviesTagsRoutes } = require('./movies-tags.routes');
-const { moviesNotesShowRoutes } = require('./movies-notes-show.routes');
+const { adminRoutes } = require('./admin.routes');
 const { myMiddleware } = require('../middlewares/isAdmin');
 
 const routes = Router();
@@ -19,6 +19,6 @@ routes.get('/', (request, response) => {
 routes.use('/users', usersRoutes);
 routes.use('/movies', moviesNotesRoutes);
 routes.use('/tags', moviesTagsRoutes)
-routes.use('/show', moviesNotesShowRoutes)
+routes.use('/admin', adminRoutes)
 
 module.exports = { routes }

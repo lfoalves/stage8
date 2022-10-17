@@ -67,7 +67,7 @@ class UsersController {
     await database.close();
 
     return reponse.json({
-      message: 'SHOW USERS',
+      message: 'All users',
       data: users
     })
   }
