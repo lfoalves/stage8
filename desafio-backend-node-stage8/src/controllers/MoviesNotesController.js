@@ -73,7 +73,6 @@ class MoviesNotesController {
       WHERE user_id = ?
       `, [user_id]);
 
-
     await database.close();
 
     if (userMovies.length <= 0) throw new AppError('Não há notas sobre filmes cadastradas ainda por este usuário!')
@@ -85,7 +84,7 @@ class MoviesNotesController {
     const database = await sqliteConnection();
 
     const allNoteMovies = await database.all(`
-      SELECT * FROM movie_notes
+      SELECT * FROM movie_notes ORDER BY title
     `)
 
     if (!allNoteMovies || allNoteMovies.length <= 0) throw new AppError('Não existem notas ainda cadastradas na base de dados')
@@ -108,7 +107,6 @@ class MoviesNotesController {
     if (!title) throw new AppError('Necessário palavra chave para a pesquisa');
 
     const userExist = await database.get('SELECT * FROM users WHERE id = ?', [user_id]);
-
     if (!userExist) throw new AppError('Usuário não identificado');
 
     // const userMoviesNotes = await database.all(`
@@ -132,15 +130,22 @@ class MoviesNotesController {
   
         notes = await database.all(`
           SELECT movie_notes.id, movie_notes.title, movie_notes.user_id
-          FROM movie_tags JOIN movie_notes
+          FROM movie_tags
+          INNER JOIN movie_notes
           ON movie_tags.note_id = movie_notes.id
-          WHERE movie_notes.user_id = ?`,[user_id])
+          WHERE movie_notes.user_id = ?
+          INTERSECT
+          SELECT *
+          FROM movie_tags
+          WHERE name IN (${filterTags.forEach(async tag => tag)})
+          `,[user_id])
+          console.log('NOTES dentro de se tags', notes)
           
       } else {
           notes = await database.all(`
-          SELECT * FROM movie_notes WHERE title LIKE '%${title}%' 
-          INTERSECT
-          SELECT * FROM movie_notes WHERE user_id = '${user_id}'
+            SELECT * FROM movie_notes WHERE title LIKE '%${title}%' 
+            INTERSECT
+            SELECT * FROM movie_notes WHERE user_id = '${user_id}'
         `)
   
         // --->>> SELECT com filtro
@@ -161,7 +166,10 @@ class MoviesNotesController {
         }
       })
 
-      console.log(notesWithTags)
+      console.log({
+        message: 'notas filtradas',
+        data: notesWithTags
+      })
       
       // console.log('NOTES', notes)
       if (notes.length <= 0) throw new AppError('Não existem notas sobre filmes com estas letras')
@@ -170,27 +178,8 @@ class MoviesNotesController {
 
     // if (userMoviesNotes.length <= 0) throw new AppError('Não existem notas sobre filmes criadas por esse usuário')
 
-    return response.json(notes);
-  }
-
-  async search(request, reponse) {
-    const database = await sqliteConnection();
-    const { user_id, title, tags} = request.query;
-
-    const userMovieNotes = database.all('SELECT * FROM users WHERE id = ?', [user_id])
-
-    // const movieNotesSearch = database.all(`
-    //   SELECT * FROM movie_notes
-    //   WHERE title LIKE %${title}%
-    // `)
-
-    console.log(userMovieNotes)
-
-
-
-    return reponse.json({
-      message: 'search movie notes'
-    })
+    // return response.json(notes);
+    return response.json(notesWithTags);
   }
 
   async update(request, reponse) {

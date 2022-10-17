@@ -10,8 +10,6 @@ const usersController = new UsersController();
 const moviesNotesController = new MoviesNotesController();
 const moviesTagsController = new MoviesTagsController();
 
-
-
 adminRoutes.get('/users', usersController.show);
 adminRoutes.get('/movie_notes', moviesNotesController.showAll);
 adminRoutes.get('/movie_tags', moviesTagsController.show);
