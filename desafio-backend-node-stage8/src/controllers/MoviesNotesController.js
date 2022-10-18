@@ -98,9 +98,6 @@ class MoviesNotesController {
   async index(request, response) {
     const database = await sqliteConnection();
 
-    // http://localhost:3333/notes?user_id=1&title=jokes&tags=node,%20express
-    // http://localhost:9999/movies?user_id=a1d1f5e0-c0d3-4c5e-be47-0ee9d577b106&title=fuga&tags=aventura,%20anima%C3%A7%C3%A3o
-
     const { user_id, title, tags } = request.query;
 
     if (!user_id) throw new AppError('Necessário a identificação do usuário');
@@ -109,37 +106,37 @@ class MoviesNotesController {
     const userExist = await database.get('SELECT * FROM users WHERE id = ?', [user_id]);
     if (!userExist) throw new AppError('Usuário não identificado');
 
-    // const userMoviesNotes = await database.all(`
-    //   SELECT * FROM movie_notes
-    //   JOIN movie_tags
-    //   ON movie_notes.id = movie_tags.note_id
-    //   WHERE movie_notes.user_id = ?
-    //   ORDER BY movie_notes.created_at`,
-    //   [user_id]);
-
       let notes;
 
       if (tags) {
         const filterTags = tags.split(',').map(tag => tag.trim())
-        console.log(filterTags)
 
-        // notes = await database.all(`
-        //   SELECT * FROM movie_notes JOIN movie_tags
-        //   ON movie_tags.note_id = movie_notes.id
-        //   WHERE movie_notes.user_id = ?`,[user_id])
-  
+        let filterTagsString = '';
+        filterTags.forEach(tag => {
+          filterTagsString += "'" + tag + "',";
+        });
+        filterTagsString = filterTagsString.slice(0, filterTagsString.length -1);
+
         notes = await database.all(`
           SELECT movie_notes.id, movie_notes.title, movie_notes.user_id
           FROM movie_tags
-          INNER JOIN movie_notes
+          JOIN movie_notes
           ON movie_tags.note_id = movie_notes.id
-          WHERE movie_notes.user_id = ?
+          WHERE name IN (${filterTagsString})
+          AND movie_tags.user_id = '${user_id}'
+          AND movie_notes.title LIKE '%${title}%'
           INTERSECT
-          SELECT *
+          SELECT movie_notes.id, movie_notes.title, movie_notes.user_id
           FROM movie_tags
-          WHERE name IN (${filterTags.forEach(async tag => tag)})
-          `,[user_id])
-          console.log('NOTES dentro de se tags', notes)
+          JOIN movie_notes
+          ON movie_tags.note_id = movie_notes.id
+          WHERE name IN (${filterTagsString})
+          AND movie_tags.user_id = '${user_id}'
+          AND movie_notes.title LIKE '%${title}%'
+        `)
+
+          console.log('NOTES dentro de if tags', notes)
+          console.log('Type OF de Filtreer string', typeof(filterTagsString))
           
       } else {
           notes = await database.all(`
@@ -147,14 +144,9 @@ class MoviesNotesController {
             INTERSECT
             SELECT * FROM movie_notes WHERE user_id = '${user_id}'
         `)
-  
-        // --->>> SELECT com filtro
-        // notes = await database.all(`
-        //   SELECT * FROM movie_notes WHERE title LIKE '%${title}%' AND user_id = '${user_id}'
-        // `)
-  
       }
 
+      // Query User Tags
       const userTags = await database.all('SELECT * FROM movie_tags WHERE user_id = ?', [user_id]);
 
       const notesWithTags = notes.map(note => {
@@ -165,20 +157,11 @@ class MoviesNotesController {
           tags: noteTags
         }
       })
-
-      console.log({
-        message: 'notas filtradas',
-        data: notesWithTags
-      })
       
-      // console.log('NOTES', notes)
       if (notes.length <= 0) throw new AppError('Não existem notas sobre filmes com estas letras')
 
     await database.close();
 
-    // if (userMoviesNotes.length <= 0) throw new AppError('Não existem notas sobre filmes criadas por esse usuário')
-
-    // return response.json(notes);
     return response.json(notesWithTags);
   }
 
