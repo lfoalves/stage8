@@ -77,7 +77,7 @@ class MoviesNotesController {
 
     if (userMovies.length <= 0) throw new AppError('Não há notas sobre filmes cadastradas ainda por este usuário!')
     
-    return reponse.json({userMovies})
+    return reponse.json({ results: userMovies})
   }
 
   async showAll(request, reponse) {
@@ -162,7 +162,7 @@ class MoviesNotesController {
 
     await database.close();
 
-    return response.json(notesWithTags);
+    return response.json({results: notesWithTags});
   }
 
   async update(request, reponse) {
